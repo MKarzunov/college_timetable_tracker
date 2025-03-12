@@ -20,23 +20,39 @@ def get_announcements():
 
     soup = bs4.BeautifulSoup(response.text, 'html.parser')
     announcements = soup.find_all(class_="announcements__element news__col")
-    # last_announcement = announcements[0]
     return announcements
 
-with open("telegram_bot_token", 'r') as token_file:
-    token = token_file.read()
+def check_announcements(announcements: list, old_announcements: list) -> tuple[str, list]:
+    if announcements is None:
+        return 'LoginError', []
+    if announcements[0] == old_announcements[0]:
+        return 'NoUpdates', []
+    for old_index in range(len(old_announcements)):
+        for new_index in range(len(announcements)):
+            if old_announcements[old_index] == announcements[new_index]:
+                break
+        else:
+            continue
+        break
+    else:
+        return 'NoEqualityFound', announcements
+    return 'EqualityFound', announcements[:new_index]
 
-bot = telebot.TeleBot(token = token)
 
-# chat_id = None
+if __name__ == '__main__':
+    print("Program Started")
 
-@bot.message_handler(commands=['start'])
-def start_bot(message):
-    chat_id = message.chat.id
-    bot.send_message(chat_id, "Бот запущен")
-    announcements = get_announcements()
-    while True:
-        bot.send_message(chat_id, announcements[0].text)
-        time.sleep(10)
+    with open("telegram_bot_token", 'r') as token_file:
+        token = token_file.read()
 
-bot.infinity_polling()
+    # bot = telebot.TeleBot(token = token)
+
+    # @bot.message_handler(commands=['start'])
+    # def start_bot(message):
+    #     chat_id = message.chat.id
+    #     bot.send_message(chat_id, "Бот запущен")
+        # while True:
+        #     bot.send_message(chat_id, announcements[0].text)
+        #     time.sleep(10)
+
+    # bot.infinity_polling()
