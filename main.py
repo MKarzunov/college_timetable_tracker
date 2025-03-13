@@ -4,11 +4,17 @@ import telebot
 import time
 
 def get_announcements():
-    with open("bxsessid", 'r') as session_file:
-        session = session_file.read()
+    sess = requests.Session()
 
-    response = requests.get("https://portal.petrocollege.ru/department-of-distance-learning/ads/",
-                            cookies={"BXSESSID": session})
+    with open("credentials", 'r') as credentials_file:
+        data = credentials_file.read().split()
+        login = data[0]
+        password = data[1]
+
+    sess.post("https://portal.petrocollege.ru/lk/login/",
+              data={"USER_LOGIN": login, "USER_PASSWORD": password, "AUTH_ACTION": "Войти"})
+
+    response = sess.get("https://portal.petrocollege.ru/department-of-distance-learning/ads/")
 
     if "Карзунов" in response.text:
         print("Logged in")
@@ -44,6 +50,8 @@ if __name__ == '__main__':
 
     with open("telegram_bot_token", 'r') as token_file:
         token = token_file.read()
+
+    get_announcements()
 
     # bot = telebot.TeleBot(token = token)
 
