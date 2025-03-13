@@ -43,7 +43,7 @@ def check_announcements(announcements: list, old_announcements: list) -> tuple[s
 
 if __name__ == '__main__':
     try:
-        logging.basicConfig(filename='log.log', level=logging.DEBUG)
+        logging.basicConfig(filename='log.log', level=logging.INFO)
 
         logging.info("Program started")
 
@@ -60,7 +60,6 @@ if __name__ == '__main__':
             while True:
                 new_announcements = get_announcements()
                 status, announcements = check_announcements(new_announcements, old_announcements)
-                bot.send_message(chat_id, status)
                 if status == 'LoginError':
                     logging.error("Login failed")
                 if status == 'NoUpdates':
@@ -74,7 +73,7 @@ if __name__ == '__main__':
                     for announcement in announcements:
                         bot.send_message(chat_id, announcement.text)
                 old_announcements = new_announcements
-                time.sleep(10)
+                time.sleep(30*60)
 
         bot.infinity_polling()
 
