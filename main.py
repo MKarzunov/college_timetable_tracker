@@ -2,6 +2,7 @@ import requests
 import bs4
 import telebot
 import time
+import logging
 
 def get_announcements():
     sess = requests.Session()
@@ -16,12 +17,7 @@ def get_announcements():
 
     response = sess.get("https://portal.petrocollege.ru/department-of-distance-learning/ads/")
 
-    if "Карзунов" in response.text:
-        print("Logged in")
-        with open("text.html", 'w', encoding="utf-8") as file:
-            file.write(response.text)
-    else:
-        print("No login")
+    if "Карзунов" not in response.text:
         return
 
     soup = bs4.BeautifulSoup(response.text, 'html.parser')
@@ -46,21 +42,41 @@ def check_announcements(announcements: list, old_announcements: list) -> tuple[s
 
 
 if __name__ == '__main__':
-    print("Program Started")
+    try:
+        logging.basicConfig(filename='log.log', level=logging.DEBUG)
 
-    with open("telegram_bot_token", 'r') as token_file:
-        token = token_file.read()
+        logging.info("Program started")
 
-    get_announcements()
+        with open("telegram_bot_token", 'r') as token_file:
+            token = token_file.read()
 
-    # bot = telebot.TeleBot(token = token)
+        bot = telebot.TeleBot(token = token)
 
-    # @bot.message_handler(commands=['start'])
-    # def start_bot(message):
-    #     chat_id = message.chat.id
-    #     bot.send_message(chat_id, "Бот запущен")
-        # while True:
-        #     bot.send_message(chat_id, announcements[0].text)
-        #     time.sleep(10)
+        @bot.message_handler(commands=['start'])
+        def start_bot(message):
+            chat_id = message.chat.id
+            bot.send_message(chat_id, "Бот запущен")
+            old_announcements = [None]
+            while True:
+                new_announcements = get_announcements()
+                status, announcements = check_announcements(new_announcements, old_announcements)
+                bot.send_message(chat_id, status)
+                if status == 'LoginError':
+                    logging.error("Login failed")
+                if status == 'NoUpdates':
+                    logging.info("No updates found")
+                else:
+                    logging.info(status)
+                    if status == 'NoEqualityFound':
+                        bot.send_message(chat_id, "Не обнаружено совпадений, отправляю все последние новости")
+                    else:
+                        bot.send_message(chat_id, "Обнаружены новости")
+                    for announcement in announcements:
+                        bot.send_message(chat_id, announcement.text)
+                old_announcements = new_announcements
+                time.sleep(10)
 
-    # bot.infinity_polling()
+        bot.infinity_polling()
+
+    except Exception as ex:
+        logging.error(ex)
